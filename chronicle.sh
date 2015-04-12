@@ -138,19 +138,19 @@ default_config (){
         debug "Writing default config file to stdout."
     fi
 
-    echo "DEBUG=$DEBUG" >>$output_file
-    echo "WARNINGS=$WARNINGS" >>$output_file
-    echo "COLOR=$COLOR" >>$output_file
+    echo "DEBUG=\"$DEBUG\"" >>$output_file
+    echo "WARNINGS=\"$WARNINGS\"" >>$output_file
+    echo "COLOR=\"$COLOR\"" >>$output_file
 
-    echo "CHRONICLE_DIR=$CHRONICLE_DIR" >>$output_file
-    echo "EDITOR=$EDITOR" >>$output_file
-    echo "DATE_FORMAT=$DATE_FORMAT" >>$output_file
+    echo "CHRONICLE_DIR=\"$CHRONICLE_DIR\"" >>$output_file
+    echo "EDITOR=\"$EDITOR\"" >>$output_file
+    echo "DATE_FORMAT=\"$DATE_FORMAT\"" >>$output_file
 
-    echo "ENCRYPTION=$ENCRYPTION" >>$output_file
-    echo "ENCRYPTION_METHOD=$ENCRYPTION_METHOD" >>$output_file
+    echo "ENCRYPTION=\"$ENCRYPTION\"" >>$output_file
+    echo "ENCRYPTION_METHOD=\"$ENCRYPTION_METHOD\"" >>$output_file
 
-    echo "TMP_ENTRY=$TMP_ENTRY" >>$output_file
-    echo "TMP_ENTRY_ORIG=$TMP_ENTRY_ORIG" >>$output_file
+    echo "TMP_ENTRY=\"$TMP_ENTRY\"" >>$output_file
+    echo "TMP_ENTRY_ORIG=\"$TMP_ENTRY_ORIG\"" >>$output_file
 }
 
 
@@ -165,11 +165,6 @@ prepare () {
     fi
 
     file=$1
-    echo "---" >> $file
-    echo "date: $(date +"%Y-%m-%d")" >> $file
-    echo "time: $(date +"%H:%M:%S")" >> $file
-    echo "tags: " >> $file
-    echo "---" >> $file
     echo >> $file
 }
 
