@@ -28,6 +28,27 @@ $ chronicle default-config $HOME/.chronicle.cfg
 Now you can modify the options as you wish:
 
 
+### Writing entries
+
+Vim has been selected for you as the default editor.
+It starts you in insert mode at the end of the prepared file.
+You can customize which editor you would like to use with the `EDITOR` option:
+
+... if you don't like to be in insert mode by default:
+```
+EDITOR="vim"
+```
+... if you're one the other side:
+```
+EDITOR="emacs"
+```
+... if you don't like using the terminal:
+```
+EDITOR="gedit
+```
+... or anything else that takes a filename as a first argument.
+
+
 ### Encryption
 
 Encryption is disabled by default, you can enable it by setting the `ENCRYPTION` option to `TRUE`.
