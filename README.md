@@ -33,6 +33,12 @@ Now you can modify the options as you wish:
 Encryption is disabled by default, you can enable it by setting the `ENCRYPTION` option to `TRUE`.
 You can change the `ENCRYPTION_METHOD` as well, as `Chronicle` uses `openssl` for encryption.
 
+```
+ENCRYPTION="TRUE"
+ENCRYPTION_METHOD="aes-256-cbc"
+```
+
+
 
 ### Filename and path conventions
 Journal entries are saved in the `CHRONICLE_DIR` directory in the subdirectory and file defined by the `DATE_FORMAT` option.
