@@ -3,7 +3,7 @@ VERSION="0.1"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
-EDITOR="vim"
+EDITOR="vim + +startinsert"
 
 CHRONICLE_DIR="$HOME/.chronicle"
 DATE_FORMAT="%Y/%m/%d/%H:%M:%S"
@@ -11,8 +11,11 @@ DATE_FORMAT="%Y/%m/%d/%H:%M:%S"
 TMP_ENTRY="/tmp/chronicle.cfg"
 TMP_ENTRY_ORIG="/tmp/chronicle.cfg.empty"
 
+ENCRYPTION="FALSE"
+ENCRYPTION_METHOD="aes-256-cbc"
+
 DEBUG="FALSE"
-WARNINGS="TRUE"
+WARNINGS="FALSE"
 COLOR="TRUE"
 
 command="$1"
@@ -143,8 +146,9 @@ default_config (){
     echo "EDITOR=$EDITOR" >>$output_file
     echo "DATE_FORMAT=$DATE_FORMAT" >>$output_file
 
-    echo "SYSTEM_CONFIG=$SYSTEM_CONFIG" >>$output_file
-    echo "USER_CONFIG=$USER_CONFIG" >>$output_file
+    echo "ENCRYPTION=$ENCRYPTION" >>$output_file
+    echo "ENCRYPTION_METHOD=$ENCRYPTION_METHOD" >>$output_file
+
     echo "TMP_ENTRY=$TMP_ENTRY" >>$output_file
     echo "TMP_ENTRY_ORIG=$TMP_ENTRY_ORIG" >>$output_file
 }
@@ -163,14 +167,23 @@ prepare () {
     file=$1
     echo "---" >> $file
     echo "date: $(date +"%Y-%m-%d")" >> $file
-    echo "time: $(date +"%H:%M")" >> $file
+    echo "time: $(date +"%H:%M:%S")" >> $file
     echo "tags: " >> $file
     echo "---" >> $file
+    echo >> $file
+}
+
+encrypt () {
+    in_file=$1
+    out_file=$2
+    debug "Encrypting the new entry"
+    openssl $ENCRYPTION_METHOD -e -in $in_file -out $out_file
 }
 
 enter () {
     debug "Starting new entry"
     prepare $TMP_ENTRY
+    entry_file=$CHRONICLE_DIR/$(date +"$DATE_FORMAT")
 
     cp $TMP_ENTRY $TMP_ENTRY_ORIG
 
@@ -180,16 +193,24 @@ enter () {
     diff $TMP_ENTRY $TMP_ENTRY_ORIG > /dev/null 2>&1
     if [ "$?" == "1" ]
     then
-        entry_file=$CHRONICLE_DIR/$(date +"$DATE_FORMAT").txt
         debug "Generating a new entry file: $entry_file"
         mkdir -p $(dirname $entry_file)
-        mv $TMP_ENTRY $entry_file
+        if [ "$ENCRYPTION" == "TRUE" ]
+        then
+            entry_file=$entry_file.enc
+            encrypt $TMP_ENTRY $entry_file
+        else
+            entry_file=$entry_file.txt
+            mv $TMP_ENTRY $entry_file
+        fi
+
     else
         debug "Not generating a new entry, no new content"
     fi
 
     rm -f $TMP_ENTRY_ORIG
 }
+
 
 
 
@@ -211,5 +232,5 @@ case $command in
         ;;
     * )
         manual
-        ;;
 esac
+
