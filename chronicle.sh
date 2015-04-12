@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="0.2"
+VERSION="0.1"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
