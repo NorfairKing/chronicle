@@ -197,6 +197,7 @@ enter () {
         else
             entry_file=$entry_file.txt
             mv $TMP_ENTRY $entry_file
+            chmod 600 $entry_file
         fi
 
     else
