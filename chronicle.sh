@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="0.1"
+VERSION="0.1.1"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
@@ -15,7 +15,7 @@ ENCRYPTION="FALSE"
 ENCRYPTION_METHOD="aes-256-cbc"
 
 DEBUG="FALSE"
-WARNINGS="FALSE"
+WARNINGS="TRUE"
 COLOR="TRUE"
 
 command="$1"
@@ -33,9 +33,24 @@ manual () {
 
     Commands:
         enter:          Write a new entry.
-        default-conig:  Print the default config values, write them to the given file if present.
+        default-conig:  Print the default config values,
+                        write them to the given file if present.
+        backup:         Backup journal entries.
         version:        Output only the version
         help:           Output this.
+
+    
+    In depth documentation:
+
+    - Backup:
+        usage: chronicle backup METHOD
+        
+        supported methods:
+            --uncompressed DIRECTORY
+              Copies the entire journal entry direcoty to the given directory.
+            
+            --gzip FILE
+              Compresses the entire journal entry directory into the given file.
     "
 }
 
@@ -79,6 +94,7 @@ warning () {
 
 error () {
     print_colored_text RED "[ERROR]: $*"
+    exit 1
 }
 
 
@@ -214,18 +230,89 @@ enter () {
     rm -f $TMP_ENTRY_ORIG
 }
 
+# ---[ Backup ]-------------------------------------------------------------- #
+
+gzip_backup () {
+    compressed_file="$(realpath $1)"
+    if [ "$compressed_file" == "" ]
+    then
+        error "No target file given"
+    else
+        if [ -e "$compressed_file" ]
+        then
+            debug "Target exists"
+            if [ -f "$compressed_file" ] # It's a file.
+            then
+                error "Target file already exists."
+            fi
+            if [ -d "$compressed_file" ] # It's a directory.
+            then
+                warning "Target is an existing directory. Copying into it."
+            fi
+        fi
+        debug "Backing up to $compressed_file."
+    fi
+    tar -zcvf "$compressed_file" "$CHRONICLE_DIR"
+    debug "Backed up and compressed all journal entries into $compressed_file"
+}
+
+uncompressed_backup () {
+    copied_directory="$(realpath $1)"
+    if [ "$copied_directory" == "" ]
+    then
+        error "No target directory given"
+    else
+        if [ -e "$copied_directory" ] # It exists
+        then
+            debug "Target exists"
+            if [ -f "$copied_directory" ] # It's a file.
+            then
+                error "Target is a file."
+            fi
+            if [ -d "$copied_directory" ] # It's a directory.
+            then
+                warning "Target is an existing directory. Copying into it."
+            fi
+        fi
+        debug "Backup to $copied_directory".
+    fi
+    cp -r "$CHRONICLE_DIR" "$copied_directory"
+    debug "Backed up all journal entries in $copied_directory"
+}
+
+backup () {
+    method="$2"
+
+    case "$method" in
+        "--uncompressed" )
+            dir="$3"
+            uncompressed_backup "$dir"
+            ;;
+        "--gzip" )
+            file="$3"
+            gzip_backup "$file"
+            ;;
+        * )
+            error "Unrecognized method, run 'chronicle help' for help."
+            ;;
+    esac
+}
+
 
 
 
 # ---[ Execute ]------------------------------------------------------------- #
 
 read_config
-case $command in
+case "$command" in
     "enter" )
         enter
         ;;
     "default-config" )
-        default_config "$*"
+        default_config $*
+        ;;
+    "backup" )
+        backup $*
         ;;
     "help" )
         manual
