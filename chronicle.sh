@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="0.1"
+VERSION="0.1.1"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
@@ -15,7 +15,7 @@ ENCRYPTION="FALSE"
 ENCRYPTION_METHOD="aes-256-cbc"
 
 DEBUG="FALSE"
-WARNINGS="FALSE"
+WARNINGS="TRUE"
 COLOR="TRUE"
 
 command="$1"
@@ -33,9 +33,24 @@ manual () {
 
     Commands:
         enter:          Write a new entry.
-        default-conig:  Print the default config values, write them to the given file if present.
+        default-conig:  Print the default config values,
+                        write them to the given file if present.
+        backup:         Backup journal entries.
         version:        Output only the version
         help:           Output this.
+
+    
+    In depth documentation:
+
+    - Backup:
+        usage: chronicle backup METHOD
+        
+        supported methods:
+            --uncompressed DIRECTORY
+              Copies the entire journal entry direcoty to the given directory.
+            
+            --gzip FILE
+              Compresses the entire journal entry directory into the given file.
     "
 }
 
@@ -59,26 +74,27 @@ print_colored_text () {
     then
         echo -e "${!color_code}$text$COL_RESET"
     else
-        echo $text
+        echo "$text"
     fi
 }
 
 debug () {
     if [ "$DEBUG" == "TRUE" ]
     then
-        print_colored_text GREEN "[DEBUG]: $@"
+        print_colored_text GREEN "[DEBUG]: $*"
     fi
 }
 
 warning () {
     if [ "$WARNINGS" == "TRUE" ]
     then
-        print_colored_text YELLOW "[WARNING]: $@"
+        print_colored_text YELLOW "[WARNING]: $*"
     fi
 }
 
 error () {
-    print_colored_text RED "[ERROR]: $@"
+    print_colored_text RED "[ERROR]: $*"
+    exit 1
 }
 
 
@@ -87,14 +103,14 @@ error () {
 
 safe_source (){
     configfile=$1
-    configfile_secured="/tmp/$(basename $configfile)"
+    configfile_secured="/tmp/$(basename "$configfile")"
 
-    if [ ! -r $configfile ]
+    if [ ! -r "$configfile" ]
     then
         warning "Could not read config file \"$configfile\"."
-        if [ -e $configfile ]
+        if [ -e "$configfile" ]
         then
-            if [ -d $configfile ]
+            if [ -d "$configfile" ]
             then
                 debug "It's a directory"
             else
@@ -115,14 +131,20 @@ safe_source (){
         configfile="$configfile_secured"
     fi
     
-    source $configfile
+    source "$configfile"
 }
 
 read_config (){
     debug "Reading system-wide config"
-    safe_source $SYSTEM_CONFIG
+    safe_source "$SYSTEM_CONFIG"
     debug "Reading user config"
-    safe_source $USER_CONFIG
+    safe_source "$USER_CONFIG"
+}
+
+cfg () {
+    key="$1"
+    value="$2"
+    echo "$key=\"$value\"" >> "$output_file"
 }
 
 default_config (){
@@ -130,28 +152,29 @@ default_config (){
     file_argument=$2
     output_file="/dev/stdout"
 
-    if [ $file_argument ]
+    if [ "$file_argument" ]
     then
-        output_file=$file_argument
+        output_file="$file_argument"
         debug "Writing default config file to $output_file"
     else
         debug "Writing default config file to stdout."
     fi
 
-    echo "DEBUG=\"$DEBUG\"" >>$output_file
-    echo "WARNINGS=\"$WARNINGS\"" >>$output_file
-    echo "COLOR=\"$COLOR\"" >>$output_file
+    cfg "DEBUG" "$DEBUG"
+    cfg "WARNINGS" "$WARNINGS"
+    cfg "COLOG" "$COLOR"
 
-    echo "CHRONICLE_DIR=\"$CHRONICLE_DIR\"" >>$output_file
-    echo "EDITOR=\"$EDITOR\"" >>$output_file
-    echo "DATE_FORMAT=\"$DATE_FORMAT\"" >>$output_file
+    cfg "CHRONICLE_DIR" "$CHRONICLE_DIR"
+    cfg "EDITOR" "$EDITOR"
+    cfg "DATE_FORMAT" "$DATE_FORMAT"
 
-    echo "ENCRYPTION=\"$ENCRYPTION\"" >>$output_file
-    echo "ENCRYPTION_METHOD=\"$ENCRYPTION_METHOD\"" >>$output_file
+    cfg "ENCRYPTION" "$ENCRYPTION"
+    cfg "ENCRYPTION_METHOD" "$ENCRYPTION_METHOD"
 
-    echo "TMP_ENTRY=\"$TMP_ENTRY\"" >>$output_file
-    echo "TMP_ENTRY_ORIG=\"$TMP_ENTRY_ORIG\"" >>$output_file
+    cfg "TMP_ENTRY" "$TMP_ENTRY"
+    cfg "TMP_ENTRY_ORIG" "$TMP_ENTRY_ORIG"
 }
+
 
 
 
@@ -165,14 +188,14 @@ prepare () {
     fi
 
     file=$1
-    echo >> $file
+    echo >> "$file"
 }
 
 encrypt () {
     in_file=$1
     out_file=$2
     debug "Encrypting the new entry"
-    openssl $ENCRYPTION_METHOD -e -in $in_file -out $out_file
+    openssl "$ENCRYPTION_METHOD" -e -in "$in_file" -out "$out_file"
 }
 
 enter () {
@@ -189,14 +212,15 @@ enter () {
     if [ "$?" == "1" ]
     then
         debug "Generating a new entry file: $entry_file"
-        mkdir -p $(dirname $entry_file)
+        mkdir -p "$(dirname "$entry_file")"
         if [ "$ENCRYPTION" == "TRUE" ]
         then
-            entry_file=$entry_file.enc
-            encrypt $TMP_ENTRY $entry_file
+            entry_file="$entry_file.enc"
+            encrypt "$TMP_ENTRY" "$entry_file"
         else
             entry_file=$entry_file.txt
-            mv $TMP_ENTRY $entry_file
+            mv "$TMP_ENTRY" "$entry_file"
+            chmod 600 "$entry_file"
         fi
 
     else
@@ -206,18 +230,89 @@ enter () {
     rm -f $TMP_ENTRY_ORIG
 }
 
+# ---[ Backup ]-------------------------------------------------------------- #
+
+gzip_backup () {
+    compressed_file="$(realpath $1)"
+    if [ "$compressed_file" == "" ]
+    then
+        error "No target file given"
+    else
+        if [ -e "$compressed_file" ]
+        then
+            debug "Target exists"
+            if [ -f "$compressed_file" ] # It's a file.
+            then
+                error "Target file already exists."
+            fi
+            if [ -d "$compressed_file" ] # It's a directory.
+            then
+                warning "Target is an existing directory. Copying into it."
+            fi
+        fi
+        debug "Backing up to $compressed_file."
+    fi
+    tar -zcvf "$compressed_file" "$CHRONICLE_DIR"
+    debug "Backed up and compressed all journal entries into $compressed_file"
+}
+
+uncompressed_backup () {
+    copied_directory="$(realpath $1)"
+    if [ "$copied_directory" == "" ]
+    then
+        error "No target directory given"
+    else
+        if [ -e "$copied_directory" ] # It exists
+        then
+            debug "Target exists"
+            if [ -f "$copied_directory" ] # It's a file.
+            then
+                error "Target is a file."
+            fi
+            if [ -d "$copied_directory" ] # It's a directory.
+            then
+                warning "Target is an existing directory. Copying into it."
+            fi
+        fi
+        debug "Backup to $copied_directory".
+    fi
+    cp -r "$CHRONICLE_DIR" "$copied_directory"
+    debug "Backed up all journal entries in $copied_directory"
+}
+
+backup () {
+    method="$2"
+
+    case "$method" in
+        "--uncompressed" )
+            dir="$3"
+            uncompressed_backup "$dir"
+            ;;
+        "--gzip" )
+            file="$3"
+            gzip_backup "$file"
+            ;;
+        * )
+            error "Unrecognized method, run 'chronicle help' for help."
+            ;;
+    esac
+}
+
 
 
 
 # ---[ Execute ]------------------------------------------------------------- #
 
 read_config
-case $command in
+case "$command" in
     "enter" )
         enter
         ;;
     "default-config" )
-        default_config $@
+        default_config $*
+        ;;
+    "backup" )
+        backup $*
         ;;
     "help" )
         manual

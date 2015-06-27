@@ -44,7 +44,7 @@ EDITOR="emacs"
 ```
 ... if you don't like using the terminal:
 ```
-EDITOR="gedit
+EDITOR="gedit"
 ```
 ... or anything else that takes a filename as a first argument.
 
