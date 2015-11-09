@@ -33,6 +33,7 @@ manual () {
 
     Commands:
         enter:          Write a new entry.
+        get:            Retrieve entries (raw)
         default-conig:  Print the default config values,
                         write them to the given file if present.
         backup:         Backup journal entries.
@@ -70,7 +71,7 @@ print_colored_text () {
     color=$1
     text=$2
     color_code="COL_$color"
-    if [ "$WARNINGS" == "TRUE" ]
+    if [ "$COLOR" == "TRUE" ]
     then
         echo -e "${!color_code}$text$COL_RESET"
     else
@@ -162,7 +163,7 @@ default_config (){
 
     cfg "DEBUG" "$DEBUG"
     cfg "WARNINGS" "$WARNINGS"
-    cfg "COLOG" "$COLOR"
+    cfg "COLOR" "$COLOR"
 
     cfg "CHRONICLE_DIR" "$CHRONICLE_DIR"
     cfg "EDITOR" "$EDITOR"
@@ -228,6 +229,24 @@ enter () {
     fi
 
     rm -f $TMP_ENTRY_ORIG
+}
+
+# ---[ Retrieve entries ]---------------------------------------------------- #
+get () {
+    file_getter="find $CHRONICLE_DIR -type f"
+    nr="$2"
+    if [ "$nr" == "" ]
+    then
+        files=`$file_getter | tac`
+    else
+        files=$($file_getter | tac | tail -n "$nr")
+    fi
+    for i in $files
+    do
+      print_colored_text GREEN $i
+      cat $i
+      echo
+    done
 }
 
 # ---[ Backup ]-------------------------------------------------------------- #
@@ -307,6 +326,9 @@ read_config
 case "$command" in
     "enter" )
         enter
+        ;;
+    "get" )
+        get $*
         ;;
     "default-config" )
         default_config $*
