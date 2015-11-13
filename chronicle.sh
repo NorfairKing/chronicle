@@ -237,9 +237,9 @@ get () {
     nr="$2"
     if [ "$nr" == "" ]
     then
-        files=`$file_getter | tac`
+        files=`$file_getter | sort`
     else
-        files=$($file_getter | tac | tail -n "$nr")
+        files=$($file_getter | sort | tail -n "$nr")
     fi
     for i in $files
     do
