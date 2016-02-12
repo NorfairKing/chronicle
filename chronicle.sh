@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="0.1.1"
+VERSION="0.1.2"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
@@ -8,8 +8,8 @@ EDITOR="vim + +startinsert"
 CHRONICLE_DIR="$HOME/.chronicle"
 DATE_FORMAT="%Y/%m/%d/%H:%M:%S"
 
-TMP_ENTRY="/tmp/chronicle.cfg"
-TMP_ENTRY_ORIG="/tmp/chronicle.cfg.empty"
+TMP_ENTRY="/tmp/chronicle.md"
+TMP_ENTRY_ORIG="/tmp/chronicle.md.empty"
 
 ENCRYPTION="FALSE"
 ENCRYPTION_METHOD="aes-256-cbc"
