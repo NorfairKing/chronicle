@@ -20,7 +20,10 @@ COLOR="TRUE"
 
 command="$1"
 
-
+which sensible-editor >/dev/null 2>&1;
+if [[ "$?" -eq 0 ]]; then
+    EDITOR="sensible-editor";
+fi
 
 # ---[ Information ]--------------------------------------------------------- #
 
