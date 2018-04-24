@@ -3,7 +3,9 @@ VERSION="0.1.1"
 
 SYSTEM_CONFIG="/etc/chronicle.cfg"
 USER_CONFIG="$HOME/.chronicle.cfg"
-EDITOR="vim + +startinsert"
+if [ "$EDITOR" -eq ]; then
+    EDITOR="vim + +startinsert"
+fi
 
 CHRONICLE_DIR="$HOME/.chronicle"
 DATE_FORMAT="%Y/%m/%d/%H:%M:%S"
