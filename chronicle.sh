@@ -7,7 +7,7 @@ if [ "$EDITOR" -eq ]; then
     EDITOR="vim + +startinsert"
 fi
 
-CHRONICLE_DIR="$HOME/.chronicle"
+${CHRONICLE_DIR:="$HOME/.chronicle"}
 DATE_FORMAT="%Y/%m/%d/%H:%M:%S"
 
 TMP_ENTRY="/tmp/chronicle.cfg"
